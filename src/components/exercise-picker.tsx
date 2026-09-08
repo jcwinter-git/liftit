@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   Select,
@@ -11,25 +9,29 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import type { Exercise } from "@/lib/types";
+import type { Exercise, ExerciseCategory } from "@/lib/types";
 
 const CREATE_NEW = "__create_new__";
 
 export function ExercisePicker({
   exercises,
+  category,
   value,
   onChange,
   onCreate,
 }: {
   exercises: Exercise[];
+  category: ExerciseCategory;
   value: string;
   onChange: (id: string) => void;
-  onCreate: (name: string) => Promise<Exercise>;
+  onCreate: (name: string, category: ExerciseCategory) => Promise<Exercise>;
 }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const filtered = exercises.filter((ex) => ex.category === category);
 
   async function handleCreate() {
     const trimmed = newName.trim();
@@ -37,7 +39,7 @@ export function ExercisePicker({
     setSaving(true);
     setError(null);
     try {
-      const exercise = await onCreate(trimmed);
+      const exercise = await onCreate(trimmed, category);
       onChange(exercise.id);
       setCreating(false);
       setNewName("");
@@ -54,7 +56,7 @@ export function ExercisePicker({
         <div className="flex gap-2">
           <Input
             autoFocus
-            placeholder="New exercise name"
+            placeholder={`New ${category.toLowerCase()} exercise name`}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
@@ -105,16 +107,16 @@ export function ExercisePicker({
       }}
     >
       <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select exercise" />
+        <SelectValue placeholder={`Select ${category.toLowerCase()} exercise`} />
       </SelectTrigger>
       <SelectContent>
-        {exercises.map((ex) => (
+        {filtered.map((ex) => (
           <SelectItem key={ex.id} value={ex.id}>
             {ex.name}
           </SelectItem>
         ))}
-        <SelectSeparator />
-        <SelectItem value={CREATE_NEW}>+ Add new exercise</SelectItem>
+        {filtered.length > 0 && <SelectSeparator />}
+        <SelectItem value={CREATE_NEW}>+ Add new {category.toLowerCase()} exercise</SelectItem>
       </SelectContent>
     </Select>
   );

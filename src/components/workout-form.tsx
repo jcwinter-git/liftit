@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ExercisePicker } from "@/components/exercise-picker";
+import { BodyPartPicker, CATEGORY_STYLE } from "@/components/body-part-picker";
 import { createExercise, saveWorkout } from "@/lib/api/workouts";
-import type { Exercise } from "@/lib/types";
+import type { Exercise, ExerciseCategory } from "@/lib/types";
 
 type SetRow = { localId: string; weight: string; reps: string };
-type Block = { localId: string; exerciseId: string; sets: SetRow[] };
+type Block = {
+  localId: string;
+  category: ExerciseCategory | null;
+  exerciseId: string;
+  sets: SetRow[];
+};
 
 function uid() {
   return crypto.randomUUID();
@@ -22,7 +29,7 @@ function emptySet(): SetRow {
 }
 
 function emptyBlock(): Block {
-  return { localId: uid(), exerciseId: "", sets: [emptySet()] };
+  return { localId: uid(), category: null, exerciseId: "", sets: [emptySet()] };
 }
 
 function todayLocal() {
@@ -43,6 +50,14 @@ export function WorkoutForm({
   const [notes, setNotes] = useState("");
   const [blocks, setBlocks] = useState<Block[]>([emptyBlock()]);
   const [isPending, setIsPending] = useState(false);
+
+  const todaysCategories = useMemo(
+    () =>
+      Array.from(
+        new Set(blocks.map((b) => b.category).filter((c): c is ExerciseCategory => !!c)),
+      ),
+    [blocks],
+  );
 
   function updateBlock(localId: string, patch: Partial<Block>) {
     setBlocks((bs) =>
@@ -96,8 +111,11 @@ export function WorkoutForm({
     );
   }
 
-  async function handleCreateExercise(name: string): Promise<Exercise> {
-    const exercise = await createExercise(name);
+  async function handleCreateExercise(
+    name: string,
+    category: ExerciseCategory,
+  ): Promise<Exercise> {
+    const exercise = await createExercise(name, category);
     setExercises((prev) =>
       prev.some((e) => e.id === exercise.id) ? prev : [...prev, exercise],
     );
@@ -161,20 +179,50 @@ export function WorkoutForm({
         />
       </div>
 
+      {todaysCategories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Today:</span>
+          {todaysCategories.map((category) => {
+            const { icon: Icon, className } = CATEGORY_STYLE[category];
+            return (
+              <Badge key={category} className={`gap-1 ${className}`}>
+                <Icon className="size-3" />
+                {category}
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
         {blocks.map((block) => (
           <Card key={block.localId}>
             <CardContent className="flex flex-col gap-3">
               <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  <ExercisePicker
-                    exercises={exercises}
-                    value={block.exerciseId}
-                    onChange={(id) =>
-                      updateBlock(block.localId, { exerciseId: id })
+                <div className="w-40 shrink-0">
+                  <BodyPartPicker
+                    value={block.category}
+                    onChange={(category) =>
+                      updateBlock(block.localId, { category, exerciseId: "" })
                     }
-                    onCreate={handleCreateExercise}
                   />
+                </div>
+                <div className="flex-1">
+                  {block.category ? (
+                    <ExercisePicker
+                      exercises={exercises}
+                      category={block.category}
+                      value={block.exerciseId}
+                      onChange={(id) =>
+                        updateBlock(block.localId, { exerciseId: id })
+                      }
+                      onCreate={handleCreateExercise}
+                    />
+                  ) : (
+                    <div className="flex h-8 items-center text-sm text-muted-foreground">
+                      Pick a body part first
+                    </div>
+                  )}
                 </div>
                 {blocks.length > 1 && (
                   <Button

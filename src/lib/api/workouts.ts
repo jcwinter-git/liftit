@@ -1,23 +1,26 @@
 import { supabase } from "@/lib/supabase";
-import type { Exercise, SaveWorkoutInput } from "@/lib/types";
+import type { Exercise, ExerciseCategory, SaveWorkoutInput } from "@/lib/types";
 
 export async function fetchExercises(): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from("exercises")
-    .select("id, name")
+    .select("id, name, category")
     .order("name");
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
-export async function createExercise(name: string): Promise<Exercise> {
+export async function createExercise(
+  name: string,
+  category: ExerciseCategory,
+): Promise<Exercise> {
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Exercise name is required");
 
   const { data, error } = await supabase
     .from("exercises")
-    .upsert({ name: trimmed }, { onConflict: "user_id,name" })
-    .select("id, name")
+    .upsert({ name: trimmed, category }, { onConflict: "user_id,name" })
+    .select("id, name, category")
     .single();
 
   if (error) throw new Error(error.message);
@@ -117,7 +120,7 @@ export async function fetchWorkoutDates(): Promise<string[]> {
 export async function fetchExercise(id: string): Promise<Exercise | null> {
   const { data, error } = await supabase
     .from("exercises")
-    .select("id, name")
+    .select("id, name, category")
     .eq("id", id)
     .single();
   if (error) return null;

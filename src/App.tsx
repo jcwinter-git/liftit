@@ -4,6 +4,8 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/protected-route";
 import { Layout } from "@/components/layout";
 import LoginPage from "@/pages/login-page";
+import ForgotPasswordPage from "@/pages/forgot-password-page";
+import ResetPasswordPage from "@/pages/reset-password-page";
 import WorkoutsPage from "@/pages/workouts-page";
 import NewWorkoutPage from "@/pages/new-workout-page";
 import WorkoutDetailPage from "@/pages/workout-detail-page";
@@ -16,7 +18,10 @@ export default function App() {
       <Routes>
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
+
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>

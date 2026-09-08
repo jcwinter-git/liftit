@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { fetchExercise, fetchExerciseSets } from "@/lib/api/workouts";
 import { VolumeChart } from "@/components/volume-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,65 +11,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { Exercise } from "@/lib/types";
 
-type SetRow = {
-  id: string;
-  weight: number | null;
-  reps: number;
-  workout: { id: string; date: string } | null;
+type WorkoutVolume = {
+  date: string;
+  volume: number;
+  hasWeight: boolean;
+  totalReps: number;
 };
 
-export default async function ExerciseDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const supabase = await createClient();
+export default function ExerciseDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [exercise, setExercise] = useState<Exercise | null | undefined>(undefined);
+  const [entries, setEntries] = useState<WorkoutVolume[]>([]);
 
-  const { data: exercise } = await supabase
-    .from("exercises")
-    .select("id, name")
-    .eq("id", id)
-    .single();
+  useEffect(() => {
+    if (!id) return;
+    fetchExercise(id).then(setExercise);
+    fetchExerciseSets(id).then((sets) => {
+      const byWorkout = new Map<string, WorkoutVolume>();
+      for (const s of sets) {
+        if (!s.workout) continue;
+        const entry = byWorkout.get(s.workout.id) ?? {
+          date: s.workout.date,
+          volume: 0,
+          hasWeight: false,
+          totalReps: 0,
+        };
+        entry.totalReps += s.reps;
+        if (s.weight != null) {
+          entry.hasWeight = true;
+          entry.volume += s.weight * s.reps;
+        }
+        byWorkout.set(s.workout.id, entry);
+      }
+      setEntries(
+        Array.from(byWorkout.values()).sort((a, b) => a.date.localeCompare(b.date)),
+      );
+    });
+  }, [id]);
 
-  if (!exercise) notFound();
-
-  const { data: setsData } = await supabase
-    .from("sets")
-    .select("id, weight, reps, workout:workouts(id, date)")
-    .eq("exercise_id", id);
-
-  const sets = (setsData as unknown as SetRow[] | null) ?? [];
-
-  const byWorkout = new Map<
-    string,
-    { date: string; volume: number; hasWeight: boolean; totalReps: number }
-  >();
-
-  for (const s of sets) {
-    if (!s.workout) continue;
-    const entry = byWorkout.get(s.workout.id) ?? {
-      date: s.workout.date,
-      volume: 0,
-      hasWeight: false,
-      totalReps: 0,
-    };
-    entry.totalReps += s.reps;
-    if (s.weight != null) {
-      entry.hasWeight = true;
-      entry.volume += s.weight * s.reps;
-    }
-    byWorkout.set(s.workout.id, entry);
+  if (exercise === undefined) return null;
+  if (exercise === null) {
+    return <p className="text-sm text-muted-foreground">Exercise not found.</p>;
   }
 
-  const sortedEntries = Array.from(byWorkout.values()).sort(
-    (a, b) => a.date.localeCompare(b.date),
-  );
+  const anyWeighted = entries.some((e) => e.hasWeight);
 
-  const anyWeighted = sortedEntries.some((e) => e.hasWeight);
-
-  const chartData = sortedEntries.map((e) => ({
+  const chartData = entries.map((e) => ({
     label: new Date(e.date + "T00:00:00").toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
@@ -80,7 +69,7 @@ export default async function ExerciseDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/history" className="text-sm text-muted-foreground hover:underline">
+        <Link to="/history" className="text-sm text-muted-foreground hover:underline">
           ← History
         </Link>
         <h1 className="text-2xl font-semibold">{exercise.name}</h1>
@@ -118,7 +107,7 @@ export default async function ExerciseDetailPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...sortedEntries].reverse().map((e) => (
+              {[...entries].reverse().map((e) => (
                 <TableRow key={e.date}>
                   <TableCell>
                     {new Date(e.date + "T00:00:00").toLocaleDateString(undefined, {

@@ -1,17 +1,18 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { fetchExercises, fetchWorkoutDates } from "@/lib/api/workouts";
 import { WorkoutCalendar } from "@/components/workout-calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Exercise } from "@/lib/types";
 
-export default async function HistoryPage() {
-  const supabase = await createClient();
+export default function HistoryPage() {
+  const [dates, setDates] = useState<string[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
 
-  const { data: workouts } = await supabase
-    .from("workouts")
-    .select("date")
-    .order("date", { ascending: false });
-
-  const dates = (workouts ?? []).map((w) => w.date as string);
+  useEffect(() => {
+    fetchWorkoutDates().then(setDates);
+    fetchExercises().then(setExercises);
+  }, []);
 
   const now = new Date();
   const last7 = new Date(now);
@@ -21,11 +22,6 @@ export default async function HistoryPage() {
 
   const count7 = dates.filter((d) => new Date(d + "T00:00:00") >= last7).length;
   const count30 = dates.filter((d) => new Date(d + "T00:00:00") >= last30).length;
-
-  const { data: exercises } = await supabase
-    .from("exercises")
-    .select("id, name")
-    .order("name");
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,7 +55,7 @@ export default async function HistoryPage() {
           <CardTitle className="text-base">Exercise trends</CardTitle>
         </CardHeader>
         <CardContent>
-          {!exercises || exercises.length === 0 ? (
+          {exercises.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Log a workout to start tracking exercise trends.
             </p>
@@ -68,7 +64,7 @@ export default async function HistoryPage() {
               {exercises.map((ex) => (
                 <li key={ex.id}>
                   <Link
-                    href={`/exercises/${ex.id}`}
+                    to={`/exercises/${ex.id}`}
                     className="text-sm hover:underline"
                   >
                     {ex.name}

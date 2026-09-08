@@ -1,36 +1,33 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { fetchWorkouts, type WorkoutListItem } from "@/lib/api/workouts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-type WorkoutRow = {
-  id: string;
-  date: string;
-  notes: string | null;
-  sets: { exercise: { name: string } | null }[];
-};
+export default function WorkoutsPage() {
+  const [workouts, setWorkouts] = useState<WorkoutListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function WorkoutsPage() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("workouts")
-    .select("id, date, notes, sets(exercise:exercises(name))")
-    .order("date", { ascending: false });
-
-  const workouts = (data as WorkoutRow[] | null) ?? [];
+  useEffect(() => {
+    fetchWorkouts()
+      .then(setWorkouts)
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Workouts</h1>
         <Button asChild>
-          <Link href="/workouts/new">+ New workout</Link>
+          <Link to="/workouts/new">+ New workout</Link>
         </Button>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {workouts.length === 0 ? (
+      {!loading && workouts.length === 0 && !error ? (
         <p className="text-sm text-muted-foreground">
           No workouts logged yet. Create your first one.
         </p>
@@ -45,7 +42,7 @@ export default async function WorkoutsPage() {
               ),
             );
             return (
-              <Link key={w.id} href={`/workouts/${w.id}`}>
+              <Link key={w.id} to={`/workouts/${w.id}`}>
                 <Card className="transition-colors hover:bg-accent/50">
                   <CardContent className="flex flex-col gap-1">
                     <div className="flex items-baseline justify-between">

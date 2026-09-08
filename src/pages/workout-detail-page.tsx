@@ -1,41 +1,48 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  deleteWorkout,
+  fetchWorkout,
+  type WorkoutDetail,
+  type WorkoutSetRow,
+} from "@/lib/api/workouts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { deleteWorkout } from "@/app/workouts/actions";
 
-type SetRow = {
-  id: string;
-  weight: number | null;
-  reps: number;
-  set_order: number;
-  exercise: { id: string; name: string } | null;
-};
-
-export default async function WorkoutDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: workout } = await supabase
-    .from("workouts")
-    .select(
-      "id, date, notes, sets(id, weight, reps, set_order, exercise:exercises(id, name))",
-    )
-    .eq("id", id)
-    .single();
-
-  if (!workout) notFound();
-
-  const sets = (workout.sets as unknown as SetRow[]).sort(
-    (a, b) => a.set_order - b.set_order,
+export default function WorkoutDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [workout, setWorkout] = useState<WorkoutDetail | null | undefined>(
+    undefined,
   );
+  const [deleting, setDeleting] = useState(false);
 
-  const grouped = new Map<string, { name: string; sets: SetRow[] }>();
+  useEffect(() => {
+    if (!id) return;
+    fetchWorkout(id).then(setWorkout);
+  }, [id]);
+
+  async function handleDelete() {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      await deleteWorkout(id);
+      navigate("/workouts");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete workout");
+      setDeleting(false);
+    }
+  }
+
+  if (workout === undefined) return null;
+  if (workout === null) {
+    return <p className="text-sm text-muted-foreground">Workout not found.</p>;
+  }
+
+  const sets = [...workout.sets].sort((a, b) => a.set_order - b.set_order);
+
+  const grouped = new Map<string, { name: string; sets: WorkoutSetRow[] }>();
   for (const s of sets) {
     const key = s.exercise?.id ?? "unknown";
     if (!grouped.has(key)) {
@@ -44,13 +51,11 @@ export default async function WorkoutDetailPage({
     grouped.get(key)!.sets.push(s);
   }
 
-  const deleteWorkoutWithId = deleteWorkout.bind(null, workout.id);
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/workouts" className="text-sm text-muted-foreground hover:underline">
+          <Link to="/workouts" className="text-sm text-muted-foreground hover:underline">
             ← Workouts
           </Link>
           <h1 className="text-2xl font-semibold">
@@ -62,11 +67,15 @@ export default async function WorkoutDetailPage({
             })}
           </h1>
         </div>
-        <form action={deleteWorkoutWithId}>
-          <Button type="submit" variant="destructive" size="sm">
-            Delete
-          </Button>
-        </form>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          {deleting ? "Deleting..." : "Delete"}
+        </Button>
       </div>
 
       {workout.notes && (

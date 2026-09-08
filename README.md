@@ -2,7 +2,7 @@
 
 A lightweight personal workout tracker. Log exercises with weight/reps per set, then see workout frequency and per-exercise volume (reps × weight) over time.
 
-Built with Next.js (App Router), Supabase (Postgres + Auth), and shadcn/ui, deployed on Vercel.
+Built with Vite + React (client-side SPA), Supabase (Postgres + Auth, called directly from the browser), and shadcn/ui, deployed on Vercel as a static site.
 
 ## Getting started
 
@@ -15,13 +15,15 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Sign in via the magic-link email flow, then log a workout.
+Open [http://localhost:5173](http://localhost:5173). Sign in via the magic-link email flow, then log a workout.
 
 ## Deploying
 
+Vercel auto-detects the Vite framework preset. `vercel.json` adds the SPA fallback rewrite so client-side routes (e.g. `/workouts/123`) work on direct load/refresh.
+
 ```bash
 vercel link
-vercel env add NEXT_PUBLIC_SUPABASE_URL
-vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY
 vercel deploy --prod
 ```

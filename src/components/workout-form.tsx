@@ -1,6 +1,5 @@
-"use client";
-
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExercisePicker } from "@/components/exercise-picker";
-import { createExercise, saveWorkout } from "@/app/workouts/actions";
+import { createExercise, saveWorkout } from "@/lib/api/workouts";
 import type { Exercise } from "@/lib/types";
 
 type SetRow = { localId: string; weight: string; reps: string };
@@ -38,11 +37,12 @@ export function WorkoutForm({
 }: {
   initialExercises: Exercise[];
 }) {
+  const navigate = useNavigate();
   const [exercises, setExercises] = useState(initialExercises);
   const [date, setDate] = useState(todayLocal());
   const [notes, setNotes] = useState("");
   const [blocks, setBlocks] = useState<Block[]>([emptyBlock()]);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   function updateBlock(localId: string, patch: Partial<Block>) {
     setBlocks((bs) =>
@@ -104,7 +104,7 @@ export function WorkoutForm({
     return exercise;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const payloadBlocks = blocks
@@ -125,17 +125,14 @@ export function WorkoutForm({
       return;
     }
 
-    startTransition(async () => {
-      try {
-        await saveWorkout({ date, notes, blocks: payloadBlocks });
-      } catch (err) {
-        const digest = (err as { digest?: string })?.digest;
-        if (digest?.startsWith("NEXT_REDIRECT")) {
-          throw err;
-        }
-        toast.error(err instanceof Error ? err.message : "Failed to save workout");
-      }
-    });
+    setIsPending(true);
+    try {
+      const workoutId = await saveWorkout({ date, notes, blocks: payloadBlocks });
+      navigate(`/workouts/${workoutId}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save workout");
+      setIsPending(false);
+    }
   }
 
   return (

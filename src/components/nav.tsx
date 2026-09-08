@@ -1,33 +1,31 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 
-export async function Nav() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export function Nav() {
+  const navigate = useNavigate();
 
-  if (!user) return null;
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    navigate("/login");
+  }
 
   return (
     <header className="border-b">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-        <Link href="/workouts" className="font-semibold">
+        <Link to="/workouts" className="font-semibold">
           LiftIt
         </Link>
         <nav className="flex items-center gap-4 text-sm">
-          <Link href="/workouts" className="hover:underline">
+          <Link to="/workouts" className="hover:underline">
             Workouts
           </Link>
-          <Link href="/history" className="hover:underline">
+          <Link to="/history" className="hover:underline">
             History
           </Link>
-          <form action="/auth/signout" method="post">
-            <Button type="submit" variant="ghost" size="sm">
-              Sign out
-            </Button>
-          </form>
+          <Button type="button" variant="ghost" size="sm" onClick={handleSignOut}>
+            Sign out
+          </Button>
         </nav>
       </div>
     </header>

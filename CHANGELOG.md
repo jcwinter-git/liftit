@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-08 (evening, later)
+
+### Home
+- Dropped the weekday initials from the calendar — it reads better as a purely
+  abstract block of squares.
+- The call to action is now wordless: a large `+` in a light blue rounded
+  rectangle, matching the blue used to mark today on the calendar. The home
+  screen now has no visible text on it at all.
+
 ## 2026-09-08 (evening)
 
 ### Logging a workout

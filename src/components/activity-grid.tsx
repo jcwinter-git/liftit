@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 
 const WEEKS = 4;
-const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
 
 const LEVEL_CLASS = [
   "bg-muted",
@@ -47,19 +46,7 @@ export function ActivityGrid({
   const max = Math.max(...dates.map((d) => load[d] ?? 0), 0);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="grid grid-cols-7 gap-1.5">
-        {WEEKDAY_INITIALS.map((initial, i) => (
-          <span
-            key={i}
-            aria-hidden="true"
-            className="text-center text-[10px] text-muted-foreground"
-          >
-            {initial}
-          </span>
-        ))}
-      </div>
-
+    <div>
       <div className="grid grid-cols-7 gap-1.5">
         {dates.map((date) => {
           const value = load[date] ?? 0;

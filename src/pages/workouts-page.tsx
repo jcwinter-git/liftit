@@ -34,10 +34,13 @@ export default function WorkoutsPage() {
 
       <Link
         to="/workouts/new"
-        className="group flex h-20 items-center justify-center gap-3 rounded-2xl bg-foreground text-background transition-transform hover:scale-[1.02] active:scale-[0.99]"
+        aria-label="New workout"
+        className="group flex h-24 items-center justify-center rounded-2xl bg-sky-100 ring-2 ring-sky-400 transition-transform hover:scale-[1.02] active:scale-[0.99] dark:bg-sky-950 dark:ring-sky-500"
       >
-        <Plus className="size-7 transition-transform group-hover:rotate-90" />
-        <span className="text-xl font-semibold tracking-tight">New workout</span>
+        <Plus
+          className="size-12 text-sky-600 transition-transform group-hover:rotate-90 dark:text-sky-300"
+          strokeWidth={3}
+        />
       </Link>
     </div>
   );

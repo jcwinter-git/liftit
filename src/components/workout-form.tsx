@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExercisePicker } from "@/components/exercise-picker";
 import { BodyPartPicker, CATEGORY_STYLE } from "@/components/body-part-picker";
+import { TargetsDialog } from "@/components/targets-dialog";
 import { createExercise, saveWorkout } from "@/lib/api/workouts";
+import { defaultExerciseId } from "@/lib/exercise-defaults";
+import { formatVolume, type ExerciseStats } from "@/lib/volume";
 import type { Exercise, ExerciseCategory } from "@/lib/types";
 
 type SetRow = { localId: string; weight: string; reps: string };
@@ -41,8 +45,10 @@ function todayLocal() {
 
 export function WorkoutForm({
   initialExercises,
+  exerciseStats,
 }: {
   initialExercises: Exercise[];
+  exerciseStats: Record<string, ExerciseStats>;
 }) {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState(initialExercises);
@@ -50,6 +56,7 @@ export function WorkoutForm({
   const [notes, setNotes] = useState("");
   const [blocks, setBlocks] = useState<Block[]>([emptyBlock()]);
   const [isPending, setIsPending] = useState(false);
+  const [targetsOpen, setTargetsOpen] = useState(true);
 
   const todaysCategories = useMemo(
     () =>
@@ -58,6 +65,15 @@ export function WorkoutForm({
       ),
     [blocks],
   );
+
+  function blockForCategory(category: ExerciseCategory): Block {
+    return {
+      localId: uid(),
+      category,
+      exerciseId: defaultExerciseId(category, exercises),
+      sets: [emptySet()],
+    };
+  }
 
   function updateBlock(localId: string, patch: Partial<Block>) {
     setBlocks((bs) =>
@@ -154,159 +170,220 @@ export function WorkoutForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <>
+      <TargetsDialog
+        open={targetsOpen}
+        onOpenChange={setTargetsOpen}
+        onConfirm={(categories) => {
+          setBlocks(categories.map(blockForCategory));
+          setTargetsOpen(false);
+        }}
+      />
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              required
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            required
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+          <Label htmlFor="notes">Notes (optional)</Label>
+          <Textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="How did it feel?"
+            rows={2}
           />
         </div>
-      </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="notes">Notes (optional)</Label>
-        <Textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="How did it feel?"
-          rows={2}
-        />
-      </div>
+        {todaysCategories.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Today:</span>
+            {todaysCategories.map((category) => {
+              const { icon: Icon, className } = CATEGORY_STYLE[category];
+              return (
+                <Badge key={category} className={`gap-1 ${className}`}>
+                  <Icon className="size-3" />
+                  {category}
+                </Badge>
+              );
+            })}
+          </div>
+        )}
 
-      {todaysCategories.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Today:</span>
-          {todaysCategories.map((category) => {
-            const { icon: Icon, className } = CATEGORY_STYLE[category];
+        <div className="flex flex-col gap-4">
+          {blocks.map((block) => {
+            const stats = block.exerciseId
+              ? exerciseStats[block.exerciseId]
+              : undefined;
+            const todayHasWeight = block.sets.some((s) => s.weight.trim() !== "");
+            const todayHasReps = block.sets.some((s) => s.reps.trim() !== "");
+            // Before anything is typed, match the unit this exercise is usually
+            // logged in so "Today" and "Prev" don't read in different units.
+            const todayWeighted =
+              todayHasWeight || (!todayHasReps && (stats?.weighted ?? false));
+            const todayValue = block.sets.reduce((sum, s) => {
+              const reps = Number(s.reps) || 0;
+              return sum + (todayWeighted ? (Number(s.weight) || 0) * reps : reps);
+            }, 0);
+
             return (
-              <Badge key={category} className={`gap-1 ${className}`}>
-                <Icon className="size-3" />
-                {category}
-              </Badge>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-4">
-        {blocks.map((block) => (
-          <Card key={block.localId}>
-            <CardContent className="flex flex-col gap-3">
-              <div className="flex items-start gap-2">
-                <div className="w-40 shrink-0">
-                  <BodyPartPicker
-                    value={block.category}
-                    onChange={(category) =>
-                      updateBlock(block.localId, { category, exerciseId: "" })
-                    }
-                  />
-                </div>
-                <div className="flex-1">
-                  {block.category ? (
-                    <ExercisePicker
-                      exercises={exercises}
-                      category={block.category}
-                      value={block.exerciseId}
-                      onChange={(id) =>
-                        updateBlock(block.localId, { exerciseId: id })
-                      }
-                      onCreate={handleCreateExercise}
-                    />
-                  ) : (
-                    <div className="flex h-8 items-center text-sm text-muted-foreground">
-                      Pick a body part first
-                    </div>
-                  )}
-                </div>
+              <Card key={block.localId} className="relative">
                 {blocks.length > 1 && (
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    aria-label="Remove exercise"
+                    className="absolute right-2 top-2 h-7 w-7 p-0"
                     onClick={() => removeBlock(block.localId)}
                   >
-                    Remove
+                    <X className="size-4" />
                   </Button>
                 )}
-              </div>
 
-              <div className="flex flex-col gap-2">
-                {block.sets.map((set, i) => (
-                  <div key={set.localId} className="flex items-center gap-2">
-                    <span className="w-5 text-xs text-muted-foreground">
-                      {i + 1}
-                    </span>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      placeholder="Weight"
-                      className="w-24"
-                      value={set.weight}
-                      onChange={(e) =>
-                        updateSet(
-                          block.localId,
-                          set.localId,
-                          "weight",
-                          e.target.value,
-                        )
-                      }
-                    />
-                    <span className="text-muted-foreground">x</span>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="Reps"
-                      className="w-20"
-                      value={set.reps}
-                      onChange={(e) =>
-                        updateSet(
-                          block.localId,
-                          set.localId,
-                          "reps",
-                          e.target.value,
-                        )
-                      }
-                    />
-                    {block.sets.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeSet(block.localId, set.localId)}
-                      >
-                        ×
-                      </Button>
-                    )}
+                <CardContent className="flex flex-col gap-3">
+                  <div className="flex items-start gap-2 pr-6">
+                    <div className="w-32 shrink-0">
+                      <BodyPartPicker
+                        value={block.category}
+                        onChange={(category) =>
+                          updateBlock(block.localId, {
+                            category,
+                            exerciseId: defaultExerciseId(category, exercises),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {block.category ? (
+                        <ExercisePicker
+                          exercises={exercises}
+                          category={block.category}
+                          value={block.exerciseId}
+                          onChange={(id) =>
+                            updateBlock(block.localId, { exerciseId: id })
+                          }
+                          onCreate={handleCreateExercise}
+                        />
+                      ) : (
+                        <div className="flex h-8 items-center text-sm text-muted-foreground">
+                          Pick a body part first
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => addSet(block.localId)}
-                >
-                  + Add set
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
 
-        <Button type="button" variant="outline" onClick={addBlock}>
-          + Add exercise
+                  <div className="flex flex-col gap-2">
+                    {block.sets.map((set, i) => (
+                      <div key={set.localId} className="flex items-center gap-2">
+                        <span className="w-4 text-xs text-muted-foreground">
+                          {i + 1}
+                        </span>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          placeholder="Weight"
+                          className="w-20"
+                          value={set.weight}
+                          onChange={(e) =>
+                            updateSet(
+                              block.localId,
+                              set.localId,
+                              "weight",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <span className="text-muted-foreground">x</span>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="Reps"
+                          className="w-16"
+                          value={set.reps}
+                          onChange={(e) =>
+                            updateSet(
+                              block.localId,
+                              set.localId,
+                              "reps",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        {block.sets.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            aria-label="Remove set"
+                            className="h-8 w-8 shrink-0 p-0"
+                            onClick={() => removeSet(block.localId, set.localId)}
+                          >
+                            <X className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="self-start"
+                      onClick={() => addSet(block.localId)}
+                    >
+                      + Add set
+                    </Button>
+                  </div>
+
+                  {block.exerciseId && (
+                    <p className="text-right text-xs text-foreground">
+                      Today: {formatVolume(todayValue, todayWeighted)}
+                      {stats?.prev && (
+                        <>
+                          {" · "}Prev:{" "}
+                          {formatVolume(
+                            stats.prev.weighted
+                              ? stats.prev.volume
+                              : stats.prev.totalReps,
+                            stats.prev.weighted,
+                          )}
+                        </>
+                      )}
+                      {stats?.max && (
+                        <>
+                          {" · "}Max:{" "}
+                          {formatVolume(
+                            stats.max.weighted
+                              ? stats.max.volume
+                              : stats.max.totalReps,
+                            stats.max.weighted,
+                          )}
+                        </>
+                      )}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          <Button type="button" variant="outline" onClick={addBlock}>
+            + Add exercise
+          </Button>
+        </div>
+
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Saving..." : "Save workout"}
         </Button>
-      </div>
-
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : "Save workout"}
-      </Button>
-    </form>
+      </form>
+    </>
   );
 }

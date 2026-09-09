@@ -1,5 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import type { Exercise, ExerciseCategory, SaveWorkoutInput } from "@/lib/types";
+import {
+  groupSetsByWorkout,
+  statsFromWorkouts,
+  type ExerciseStats,
+  type SetLike,
+} from "@/lib/volume";
 
 export async function fetchExercises(): Promise<Exercise[]> {
   const { data, error } = await supabase
@@ -141,4 +147,30 @@ export async function fetchExerciseSets(id: string): Promise<ExerciseSetRow[]> {
     .eq("exercise_id", id);
   if (error) throw new Error(error.message);
   return (data as unknown as ExerciseSetRow[]) ?? [];
+}
+
+// Previous and best-ever single-workout volume for every exercise, in one
+// query, so the new-workout form can show history without a request per block.
+export async function fetchExerciseVolumeStats(): Promise<
+  Record<string, ExerciseStats>
+> {
+  const { data, error } = await supabase
+    .from("sets")
+    .select("exercise_id, weight, reps, workout:workouts(id, date)");
+  if (error) throw new Error(error.message);
+
+  const rows = (data as unknown as (SetLike & { exercise_id: string })[]) ?? [];
+
+  const byExercise = new Map<string, SetLike[]>();
+  for (const row of rows) {
+    const list = byExercise.get(row.exercise_id);
+    if (list) list.push(row);
+    else byExercise.set(row.exercise_id, [row]);
+  }
+
+  const stats: Record<string, ExerciseStats> = {};
+  for (const [exerciseId, sets] of byExercise) {
+    stats[exerciseId] = statsFromWorkouts(groupSetsByWorkout(sets));
+  }
+  return stats;
 }

@@ -11,14 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { groupSetsByWorkout, type WorkoutVolume } from "@/lib/volume";
 import type { Exercise } from "@/lib/types";
-
-type WorkoutVolume = {
-  date: string;
-  volume: number;
-  hasWeight: boolean;
-  totalReps: number;
-};
 
 export default function ExerciseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,27 +22,7 @@ export default function ExerciseDetailPage() {
   useEffect(() => {
     if (!id) return;
     fetchExercise(id).then(setExercise);
-    fetchExerciseSets(id).then((sets) => {
-      const byWorkout = new Map<string, WorkoutVolume>();
-      for (const s of sets) {
-        if (!s.workout) continue;
-        const entry = byWorkout.get(s.workout.id) ?? {
-          date: s.workout.date,
-          volume: 0,
-          hasWeight: false,
-          totalReps: 0,
-        };
-        entry.totalReps += s.reps;
-        if (s.weight != null) {
-          entry.hasWeight = true;
-          entry.volume += s.weight * s.reps;
-        }
-        byWorkout.set(s.workout.id, entry);
-      }
-      setEntries(
-        Array.from(byWorkout.values()).sort((a, b) => a.date.localeCompare(b.date)),
-      );
-    });
+    fetchExerciseSets(id).then((sets) => setEntries(groupSetsByWorkout(sets)));
   }, [id]);
 
   if (exercise === undefined) return null;
@@ -56,7 +30,7 @@ export default function ExerciseDetailPage() {
     return <p className="text-sm text-muted-foreground">Exercise not found.</p>;
   }
 
-  const anyWeighted = entries.some((e) => e.hasWeight);
+  const anyWeighted = entries.some((e) => e.weighted);
 
   const chartData = entries.map((e) => ({
     label: new Date(e.date + "T00:00:00").toLocaleDateString(undefined, {

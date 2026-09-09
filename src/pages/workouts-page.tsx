@@ -1,84 +1,44 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
 import {
   fetchDailyLoad,
   fetchWorkouts,
   type WorkoutListItem,
 } from "@/lib/api/workouts";
 import { ActivityGrid } from "@/components/activity-grid";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function WorkoutsPage() {
-  const [workouts, setWorkouts] = useState<WorkoutListItem[]>([]);
   const [load, setLoad] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const [workoutByDate, setWorkoutByDate] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchWorkouts(), fetchDailyLoad()])
-      .then(([list, dailyLoad]) => {
-        setWorkouts(list);
+      .then(([list, dailyLoad]: [WorkoutListItem[], Record<string, number>]) => {
+        const byDate: Record<string, string> = {};
+        // Newest first, so the last write per date wins the earliest workout;
+        // reversing keeps the most recent one for a day with two sessions.
+        for (const w of [...list].reverse()) byDate[w.date] = w.id;
+        setWorkoutByDate(byDate);
         setLoad(dailyLoad);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
-      .finally(() => setLoading(false));
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"));
   }, []);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Workouts</h1>
-        <Button asChild>
-          <Link to="/workouts/new">+ New workout</Link>
-        </Button>
-      </div>
-
-      <ActivityGrid load={load} />
-
+    <div className="flex flex-col gap-8 py-4">
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {!loading && workouts.length === 0 && !error ? (
-        <p className="text-sm text-muted-foreground">
-          No workouts logged yet. Create your first one.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {workouts.map((w) => {
-            const exerciseNames = Array.from(
-              new Set(
-                w.sets
-                  .map((s) => s.exercise?.name)
-                  .filter((n): n is string => !!n),
-              ),
-            );
-            return (
-              <Link key={w.id} to={`/workouts/${w.id}`}>
-                <Card className="transition-colors hover:bg-accent/50">
-                  <CardContent className="flex flex-col gap-1">
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-medium">
-                        {new Date(w.date + "T00:00:00").toLocaleDateString(
-                          undefined,
-                          { weekday: "short", month: "short", day: "numeric" },
-                        )}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {w.sets.length} set{w.sets.length === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {exerciseNames.length > 0
-                        ? exerciseNames.join(", ")
-                        : "No sets recorded"}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      <ActivityGrid load={load} workoutByDate={workoutByDate} />
+
+      <Link
+        to="/workouts/new"
+        className="group flex h-20 items-center justify-center gap-3 rounded-2xl bg-foreground text-background transition-transform hover:scale-[1.02] active:scale-[0.99]"
+      >
+        <Plus className="size-7 transition-transform group-hover:rotate-90" />
+        <span className="text-xl font-semibold tracking-tight">New workout</span>
+      </Link>
     </div>
   );
 }

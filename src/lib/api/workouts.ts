@@ -5,6 +5,7 @@ import {
   statsFromWorkouts,
   type ExerciseStats,
   type SetLike,
+  type WorkoutVolume,
 } from "@/lib/volume";
 
 export async function fetchExercises(): Promise<Exercise[]> {
@@ -246,4 +247,43 @@ export async function fetchExerciseVolumeStats(): Promise<
     stats[exerciseId] = statsFromWorkouts(groupSetsByWorkout(sets));
   }
   return stats;
+}
+
+export type ExerciseHistory = {
+  exercise: Exercise;
+  entries: WorkoutVolume[];
+  workoutCount: number;
+};
+
+// Every exercise's per-workout history in one query, ordered by how often the
+// exercise shows up so the charts can lead with what's actually trained most.
+export async function fetchExerciseHistories(): Promise<ExerciseHistory[]> {
+  const { data, error } = await supabase
+    .from("sets")
+    .select(
+      "weight, reps, exercise:exercises(id, name, category), workout:workouts(id, date)",
+    );
+  if (error) throw new Error(error.message);
+
+  const rows =
+    (data as unknown as (SetLike & { exercise: Exercise | null })[]) ?? [];
+
+  const byExercise = new Map<string, { exercise: Exercise; sets: SetLike[] }>();
+  for (const row of rows) {
+    if (!row.exercise) continue;
+    const found = byExercise.get(row.exercise.id);
+    if (found) found.sets.push(row);
+    else byExercise.set(row.exercise.id, { exercise: row.exercise, sets: [row] });
+  }
+
+  return Array.from(byExercise.values())
+    .map(({ exercise, sets }) => {
+      const entries = groupSetsByWorkout(sets);
+      return { exercise, entries, workoutCount: entries.length };
+    })
+    .sort(
+      (a, b) =>
+        b.workoutCount - a.workoutCount ||
+        a.exercise.name.localeCompare(b.exercise.name),
+    );
 }

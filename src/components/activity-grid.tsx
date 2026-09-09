@@ -1,4 +1,6 @@
-const DAYS = 14;
+import { Link } from "react-router-dom";
+
+const DAYS = 28;
 
 const LEVEL_CLASS = [
   "bg-muted",
@@ -22,14 +24,19 @@ function lastDays(count: number): string[] {
 
 // Load is weighted volume plus raw reps for bodyweight work, shaded relative to
 // the hardest day in the window so the scale always means something.
-export function ActivityGrid({ load }: { load: Record<string, number> }) {
+export function ActivityGrid({
+  load,
+  workoutByDate = {},
+}: {
+  load: Record<string, number>;
+  workoutByDate?: Record<string, string>;
+}) {
   const days = lastDays(DAYS);
   const max = Math.max(...days.map((d) => load[d] ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs text-muted-foreground">Last 14 days</span>
-      <div className="grid max-w-[280px] grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1.5">
         {days.map((date) => {
           const value = load[date] ?? 0;
           const level =
@@ -40,15 +47,24 @@ export function ActivityGrid({ load }: { load: Record<string, number> }) {
             undefined,
             { weekday: "short", month: "short", day: "numeric" },
           );
-          return (
-            <div
+          const title = value > 0 ? `${label} — ${Math.round(value)}` : `${label} — rest`;
+          const cell = `aspect-square rounded-md ${LEVEL_CLASS[level]}`;
+          const workoutId = workoutByDate[date];
+
+          return workoutId ? (
+            <Link
               key={date}
-              title={value > 0 ? `${label} — ${Math.round(value)}` : `${label} — rest`}
-              className={`aspect-square rounded-md ${LEVEL_CLASS[level]}`}
+              to={`/workouts/${workoutId}`}
+              title={title}
+              aria-label={title}
+              className={`${cell} transition-transform hover:scale-110`}
             />
+          ) : (
+            <div key={date} title={title} className={cell} />
           );
         })}
       </div>
+      <span className="text-xs text-muted-foreground">Last 28 days</span>
     </div>
   );
 }

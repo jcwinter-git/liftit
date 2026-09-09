@@ -9,6 +9,7 @@ export type WorkoutVolume = {
   volume: number;
   totalReps: number;
   weighted: boolean;
+  maxWeight: number | null;
 };
 
 // Groups an exercise's sets into one entry per workout, oldest first.
@@ -22,11 +23,13 @@ export function groupSetsByWorkout(sets: SetLike[]): WorkoutVolume[] {
       volume: 0,
       totalReps: 0,
       weighted: false,
+      maxWeight: null,
     };
     entry.totalReps += s.reps;
     if (s.weight != null) {
       entry.weighted = true;
       entry.volume += s.weight * s.reps;
+      entry.maxWeight = Math.max(entry.maxWeight ?? 0, s.weight);
     }
     byWorkout.set(s.workout.id, entry);
   }

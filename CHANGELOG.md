@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-09-08 (later)
+
+### Navigation
+- **LiftIt** is now the large wordmark at the top left, and History / Sign out moved
+  into a drawer behind the hamburger on the left.
+- Removed the **Workouts** nav link — it went to the same place as the LiftIt
+  wordmark.
+
+### Home
+- Stripped back to just the activity grid and the call to action. The workout list
+  moved to History.
+- Activity grid extended from 14 to **28 days**, and each day you trained is now
+  clickable — it opens that workout.
+- **New workout** is now a full-width block button rather than a small one.
+
+### History
+- Added a **body-part filter** row using the same icons, scrollable, nothing
+  selected by default. Only body parts you've actually logged appear.
+- Added per-exercise **trend charts** — total volume over time with your best
+  weight in parentheses, ordered by how often you train each one. Deliberately
+  spare: no gridlines, axes or legends, with the detail in the tooltip.
+- Exercises trained only once show "One session so far" instead of a chart with a
+  single floating point.
+- Added a discreet icon-only **exercise filter** at the top right, listing
+  exercises alphabetically; it stacks with the body-part filter.
+- The full workout list now lives at the bottom of this page.
+
 ## 2026-09-08
 
 ### Editing and viewing workouts

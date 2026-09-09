@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-08 (evening)
+
+### Logging a workout
+- Replaced the `Today / Prev / Max` numbers with a wordless progress bar. It fills
+  toward your last session and turns green once you pass it; a small star marks
+  your best ever.
+- **Today's targets**: the Start workout button is now full width and always
+  works — with nothing selected it just starts an empty workout. Removed the
+  separate Skip button, since closing with the × does the same thing.
+
+### Home
+- The activity grid is now a proper calendar: Sunday to Saturday, four weeks,
+  weekday initials across the top. Today is ringed in light blue, days still
+  later this week are dimmed, and the green load gradient is unchanged.
+
 ## 2026-09-08 (later)
 
 ### Navigation

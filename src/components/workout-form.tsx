@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { ExercisePicker } from "@/components/exercise-picker";
 import { BodyPartPicker, CATEGORY_STYLE } from "@/components/body-part-picker";
 import { TargetsDialog } from "@/components/targets-dialog";
+import { BeatBar } from "@/components/beat-bar";
 import { createExercise, saveWorkout, updateWorkout } from "@/lib/api/workouts";
 import { defaultExerciseId } from "@/lib/exercise-defaults";
-import { formatVolume, type ExerciseStats } from "@/lib/volume";
+import { type ExerciseStats } from "@/lib/volume";
 import {
   emptyBlock,
   emptySet,
@@ -188,7 +189,7 @@ export function WorkoutForm({
           open={targetsOpen}
           onOpenChange={setTargetsOpen}
           onConfirm={(categories) => {
-            setBlocks(categories.map(blockForCategory));
+            if (categories.length > 0) setBlocks(categories.map(blockForCategory));
             setTargetsOpen(false);
           }}
         />
@@ -349,33 +350,22 @@ export function WorkoutForm({
                     ))}
                   </div>
 
-                  {block.exerciseId && (
-                    <p className="text-right text-xs text-foreground">
-                      {isEdit ? "This workout" : "Today"}:{" "}
-                      {formatVolume(currentValue, weighted)}
-                      {stats?.prev && (
-                        <>
-                          {" · "}Prev:{" "}
-                          {formatVolume(
-                            stats.prev.weighted
-                              ? stats.prev.volume
-                              : stats.prev.totalReps,
-                            stats.prev.weighted,
-                          )}
-                        </>
-                      )}
-                      {stats?.max && (
-                        <>
-                          {" · "}Max:{" "}
-                          {formatVolume(
-                            stats.max.weighted
-                              ? stats.max.volume
-                              : stats.max.totalReps,
-                            stats.max.weighted,
-                          )}
-                        </>
-                      )}
-                    </p>
+                  {block.exerciseId && stats?.prev && (
+                    <BeatBar
+                      current={currentValue}
+                      prev={
+                        stats.prev.weighted
+                          ? stats.prev.volume
+                          : stats.prev.totalReps
+                      }
+                      max={
+                        stats.max
+                          ? stats.max.weighted
+                            ? stats.max.volume
+                            : stats.max.totalReps
+                          : null
+                      }
+                    />
                   )}
                 </CardContent>
               </Card>

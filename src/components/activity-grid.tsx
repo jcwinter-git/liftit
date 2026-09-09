@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
-const DAYS = 28;
+const WEEKS = 4;
+const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
 
 const LEVEL_CLASS = [
   "bg-muted",
@@ -10,20 +11,31 @@ const LEVEL_CLASS = [
   "bg-emerald-600 dark:bg-emerald-400",
 ];
 
-function lastDays(count: number): string[] {
-  const out: string[] = [];
-  const now = new Date();
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const offset = d.getTimezoneOffset();
-    out.push(new Date(d.getTime() - offset * 60 * 1000).toISOString().slice(0, 10));
-  }
-  return out;
+function toLocalISO(date: Date) {
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60 * 1000).toISOString().slice(0, 10);
 }
 
-// Load is weighted volume plus raw reps for bodyweight work, shaded relative to
-// the hardest day in the window so the scale always means something.
+// Four calendar weeks, Sunday through Saturday, ending with the week we're in —
+// so the columns line up as weekdays rather than sliding with the date.
+function calendarWindow(): { dates: string[]; today: string } {
+  const now = new Date();
+  now.setHours(12, 0, 0, 0);
+  const saturday = new Date(now);
+  saturday.setDate(now.getDate() + (6 - now.getDay()));
+
+  const start = new Date(saturday);
+  start.setDate(saturday.getDate() - (WEEKS * 7 - 1));
+
+  const dates: string[] = [];
+  for (let i = 0; i < WEEKS * 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dates.push(toLocalISO(d));
+  }
+  return { dates, today: toLocalISO(now) };
+}
+
 export function ActivityGrid({
   load,
   workoutByDate = {},
@@ -31,24 +43,53 @@ export function ActivityGrid({
   load: Record<string, number>;
   workoutByDate?: Record<string, string>;
 }) {
-  const days = lastDays(DAYS);
-  const max = Math.max(...days.map((d) => load[d] ?? 0), 0);
+  const { dates, today } = calendarWindow();
+  const max = Math.max(...dates.map((d) => load[d] ?? 0), 0);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <div className="grid grid-cols-7 gap-1.5">
-        {days.map((date) => {
+        {WEEKDAY_INITIALS.map((initial, i) => (
+          <span
+            key={i}
+            aria-hidden="true"
+            className="text-center text-[10px] text-muted-foreground"
+          >
+            {initial}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5">
+        {dates.map((date) => {
           const value = load[date] ?? 0;
+          const isToday = date === today;
+          const isFuture = date > today;
           const level =
             value <= 0 || max <= 0
               ? 0
               : Math.min(4, Math.max(1, Math.ceil((value / max) * 4)));
+
+          const fill = isFuture
+            ? "bg-muted/40"
+            : level === 0 && isToday
+              ? "bg-sky-100 dark:bg-sky-950"
+              : LEVEL_CLASS[level];
+
+          const cell = `aspect-square rounded-md ${fill} ${
+            isToday ? "ring-2 ring-sky-400 dark:ring-sky-500" : ""
+          }`;
+
           const label = new Date(date + "T00:00:00").toLocaleDateString(
             undefined,
             { weekday: "short", month: "short", day: "numeric" },
           );
-          const title = value > 0 ? `${label} — ${Math.round(value)}` : `${label} — rest`;
-          const cell = `aspect-square rounded-md ${LEVEL_CLASS[level]}`;
+          const title = isFuture
+            ? label
+            : value > 0
+              ? `${label} — ${Math.round(value)}`
+              : `${label} — rest`;
+
           const workoutId = workoutByDate[date];
 
           return workoutId ? (
@@ -64,7 +105,6 @@ export function ActivityGrid({
           );
         })}
       </div>
-      <span className="text-xs text-muted-foreground">Last 28 days</span>
     </div>
   );
 }

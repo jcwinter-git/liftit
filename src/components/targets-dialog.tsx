@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -36,7 +35,7 @@ export function TargetsDialog({
         <DialogHeader>
           <DialogTitle>Today's targets</DialogTitle>
           <DialogDescription>
-            Pick what you're training and we'll set up the exercises.
+            Pick what you're training, or close this to start from scratch.
           </DialogDescription>
         </DialogHeader>
 
@@ -45,22 +44,15 @@ export function TargetsDialog({
           onSelect={toggle}
         />
 
-        <DialogFooter className="gap-2 sm:justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-          >
-            Skip
-          </Button>
-          <Button
-            type="button"
-            disabled={selected.length === 0}
-            onClick={() => onConfirm(selected)}
-          >
-            Start workout
-          </Button>
-        </DialogFooter>
+        {/* Always enabled: with nothing picked this just starts an empty
+            workout, so the button can never look tappable but do nothing. */}
+        <Button
+          type="button"
+          className="h-14 w-full text-base font-semibold"
+          onClick={() => onConfirm(selected)}
+        >
+          Start workout
+        </Button>
       </DialogContent>
     </Dialog>
   );

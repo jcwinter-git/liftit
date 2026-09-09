@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,30 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { ExercisePicker } from "@/components/exercise-picker";
 import { BodyPartPicker, CATEGORY_STYLE } from "@/components/body-part-picker";
 import { TargetsDialog } from "@/components/targets-dialog";
-import { createExercise, saveWorkout } from "@/lib/api/workouts";
+import { createExercise, saveWorkout, updateWorkout } from "@/lib/api/workouts";
 import { defaultExerciseId } from "@/lib/exercise-defaults";
 import { formatVolume, type ExerciseStats } from "@/lib/volume";
+import {
+  emptyBlock,
+  emptySet,
+  uid,
+  type Block,
+} from "@/lib/workout-blocks";
 import type { Exercise, ExerciseCategory } from "@/lib/types";
-
-type SetRow = { localId: string; weight: string; reps: string };
-type Block = {
-  localId: string;
-  category: ExerciseCategory | null;
-  exerciseId: string;
-  sets: SetRow[];
-};
-
-function uid() {
-  return crypto.randomUUID();
-}
-
-function emptySet(): SetRow {
-  return { localId: uid(), weight: "", reps: "" };
-}
-
-function emptyBlock(): Block {
-  return { localId: uid(), category: null, exerciseId: "", sets: [emptySet()] };
-}
 
 function todayLocal() {
   const now = new Date();
@@ -46,17 +31,39 @@ function todayLocal() {
 export function WorkoutForm({
   initialExercises,
   exerciseStats,
+  mode = "create",
+  workoutId,
+  initialDate,
+  initialNotes = "",
+  initialBlocks,
+  onCancel,
+  onSaved,
 }: {
   initialExercises: Exercise[];
   exerciseStats: Record<string, ExerciseStats>;
+  mode?: "create" | "edit";
+  workoutId?: string;
+  initialDate?: string;
+  initialNotes?: string;
+  initialBlocks?: Block[];
+  onCancel: () => void;
+  onSaved: (workoutId: string) => void;
 }) {
-  const navigate = useNavigate();
+  const isEdit = mode === "edit";
   const [exercises, setExercises] = useState(initialExercises);
-  const [date, setDate] = useState(todayLocal());
-  const [notes, setNotes] = useState("");
-  const [blocks, setBlocks] = useState<Block[]>([emptyBlock()]);
+  const [date, setDate] = useState(initialDate ?? todayLocal());
+  const [notes, setNotes] = useState(initialNotes);
+  const [blocks, setBlocks] = useState<Block[]>(initialBlocks ?? [emptyBlock()]);
   const [isPending, setIsPending] = useState(false);
-  const [targetsOpen, setTargetsOpen] = useState(true);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [targetsOpen, setTargetsOpen] = useState(!isEdit);
+
+  // The cancel speedbump shouldn't stay armed indefinitely.
+  useEffect(() => {
+    if (!confirmCancel) return;
+    const timer = setTimeout(() => setConfirmCancel(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirmCancel]);
 
   const todaysCategories = useMemo(
     () =>
@@ -161,8 +168,13 @@ export function WorkoutForm({
 
     setIsPending(true);
     try {
-      const workoutId = await saveWorkout({ date, notes, blocks: payloadBlocks });
-      navigate(`/workouts/${workoutId}`);
+      if (isEdit && workoutId) {
+        await updateWorkout(workoutId, { date, notes, blocks: payloadBlocks });
+        onSaved(workoutId);
+      } else {
+        const newId = await saveWorkout({ date, notes, blocks: payloadBlocks });
+        onSaved(newId);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save workout");
       setIsPending(false);
@@ -171,14 +183,16 @@ export function WorkoutForm({
 
   return (
     <>
-      <TargetsDialog
-        open={targetsOpen}
-        onOpenChange={setTargetsOpen}
-        onConfirm={(categories) => {
-          setBlocks(categories.map(blockForCategory));
-          setTargetsOpen(false);
-        }}
-      />
+      {!isEdit && (
+        <TargetsDialog
+          open={targetsOpen}
+          onOpenChange={setTargetsOpen}
+          onConfirm={(categories) => {
+            setBlocks(categories.map(blockForCategory));
+            setTargetsOpen(false);
+          }}
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -194,20 +208,11 @@ export function WorkoutForm({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="notes">Notes (optional)</Label>
-          <Textarea
-            id="notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="How did it feel?"
-            rows={2}
-          />
-        </div>
-
         {todaysCategories.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">Today:</span>
+            <span className="text-sm text-muted-foreground">
+              {isEdit ? "Trained:" : "Today:"}
+            </span>
             {todaysCategories.map((category) => {
               const { icon: Icon, className } = CATEGORY_STYLE[category];
               return (
@@ -225,15 +230,14 @@ export function WorkoutForm({
             const stats = block.exerciseId
               ? exerciseStats[block.exerciseId]
               : undefined;
-            const todayHasWeight = block.sets.some((s) => s.weight.trim() !== "");
-            const todayHasReps = block.sets.some((s) => s.reps.trim() !== "");
+            const hasWeight = block.sets.some((s) => s.weight.trim() !== "");
+            const hasReps = block.sets.some((s) => s.reps.trim() !== "");
             // Before anything is typed, match the unit this exercise is usually
-            // logged in so "Today" and "Prev" don't read in different units.
-            const todayWeighted =
-              todayHasWeight || (!todayHasReps && (stats?.weighted ?? false));
-            const todayValue = block.sets.reduce((sum, s) => {
+            // logged in so the current and previous figures read the same way.
+            const weighted = hasWeight || (!hasReps && (stats?.weighted ?? false));
+            const currentValue = block.sets.reduce((sum, s) => {
               const reps = Number(s.reps) || 0;
-              return sum + (todayWeighted ? (Number(s.weight) || 0) * reps : reps);
+              return sum + (weighted ? (Number(s.weight) || 0) * reps : reps);
             }, 0);
 
             return (
@@ -330,22 +334,25 @@ export function WorkoutForm({
                             <X className="size-3.5" />
                           </Button>
                         )}
+                        {i === block.sets.length - 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            aria-label="Add set"
+                            className="h-8 w-8 shrink-0 p-0 text-muted-foreground"
+                            onClick={() => addSet(block.localId)}
+                          >
+                            <Plus className="size-4" />
+                          </Button>
+                        )}
                       </div>
                     ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="self-start"
-                      onClick={() => addSet(block.localId)}
-                    >
-                      + Add set
-                    </Button>
                   </div>
 
                   {block.exerciseId && (
                     <p className="text-right text-xs text-foreground">
-                      Today: {formatVolume(todayValue, todayWeighted)}
+                      {isEdit ? "This workout" : "Today"}:{" "}
+                      {formatVolume(currentValue, weighted)}
                       {stats?.prev && (
                         <>
                           {" · "}Prev:{" "}
@@ -380,9 +387,44 @@ export function WorkoutForm({
           </Button>
         </div>
 
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving..." : "Save workout"}
-        </Button>
+        {isEdit && (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="How did it feel?"
+              rows={3}
+            />
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              if (confirmCancel) onCancel();
+              else setConfirmCancel(true);
+            }}
+          >
+            {/* Colour sits on the label: the button's own stylesheet wins over a
+                text-* utility applied to the button element. */}
+            {confirmCancel ? (
+              <span className="text-red-600 dark:text-red-400">Confirm?</span>
+            ) : (
+              "Cancel"
+            )}
+          </Button>
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="bg-sky-500 text-white hover:bg-sky-600"
+          >
+            {isPending ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </form>
     </>
   );

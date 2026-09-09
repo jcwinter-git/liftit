@@ -1,17 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchWorkouts, type WorkoutListItem } from "@/lib/api/workouts";
+import {
+  fetchDailyLoad,
+  fetchWorkouts,
+  type WorkoutListItem,
+} from "@/lib/api/workouts";
+import { ActivityGrid } from "@/components/activity-grid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function WorkoutsPage() {
   const [workouts, setWorkouts] = useState<WorkoutListItem[]>([]);
+  const [load, setLoad] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchWorkouts()
-      .then(setWorkouts)
+    Promise.all([fetchWorkouts(), fetchDailyLoad()])
+      .then(([list, dailyLoad]) => {
+        setWorkouts(list);
+        setLoad(dailyLoad);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, []);
@@ -24,6 +33,8 @@ export default function WorkoutsPage() {
           <Link to="/workouts/new">+ New workout</Link>
         </Button>
       </div>
+
+      <ActivityGrid load={load} />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

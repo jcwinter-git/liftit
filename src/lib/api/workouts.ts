@@ -92,7 +92,7 @@ export type WorkoutSetRow = {
   weight: number | null;
   reps: number;
   set_order: number;
-  exercise: { id: string; name: string } | null;
+  exercise: { id: string; name: string; category: ExerciseCategory } | null;
 };
 
 export type WorkoutDetail = {
@@ -106,12 +106,85 @@ export async function fetchWorkout(id: string): Promise<WorkoutDetail | null> {
   const { data, error } = await supabase
     .from("workouts")
     .select(
-      "id, date, notes, sets(id, weight, reps, set_order, exercise:exercises(id, name))",
+      "id, date, notes, sets(id, weight, reps, set_order, exercise:exercises(id, name, category))",
     )
     .eq("id", id)
     .single();
   if (error) return null;
   return data as unknown as WorkoutDetail;
+}
+
+// Replaces a workout's sets. New rows go in before the old ones come out, so a
+// failure part-way leaves duplicates (recoverable) rather than losing sets.
+export async function updateWorkout(
+  id: string,
+  input: SaveWorkoutInput,
+): Promise<void> {
+  if (!input.date) throw new Error("Date is required");
+  const validBlocks = input.blocks.filter(
+    (b) => b.exerciseId && b.sets.length > 0,
+  );
+  if (validBlocks.length === 0) {
+    throw new Error("Add at least one exercise with a set");
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("sets")
+    .select("id")
+    .eq("workout_id", id);
+  if (existingError) throw new Error(existingError.message);
+
+  const { error: workoutError } = await supabase
+    .from("workouts")
+    .update({ date: input.date, notes: input.notes?.trim() || null })
+    .eq("id", id);
+  if (workoutError) throw new Error(workoutError.message);
+
+  const setRows = validBlocks.flatMap((block, blockIdx) =>
+    block.sets.map((set, setIdx) => ({
+      workout_id: id,
+      exercise_id: block.exerciseId,
+      weight: set.weight,
+      reps: set.reps,
+      set_order: blockIdx * 1000 + setIdx,
+    })),
+  );
+
+  const { error: insertError } = await supabase.from("sets").insert(setRows);
+  if (insertError) throw new Error(insertError.message);
+
+  const oldIds = (existing ?? []).map((s) => s.id as string);
+  if (oldIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("sets")
+      .delete()
+      .in("id", oldIds);
+    if (deleteError) throw new Error(deleteError.message);
+  }
+}
+
+// Per-day training load for the activity grid: weighted volume plus raw reps
+// for bodyweight sets, keyed by workout date.
+export async function fetchDailyLoad(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("sets")
+    .select("weight, reps, workout:workouts(date)");
+  if (error) throw new Error(error.message);
+
+  const rows =
+    (data as unknown as {
+      weight: number | null;
+      reps: number;
+      workout: { date: string } | null;
+    }[]) ?? [];
+
+  const byDate: Record<string, number> = {};
+  for (const row of rows) {
+    if (!row.workout) continue;
+    const load = row.weight != null ? row.weight * row.reps : row.reps;
+    byDate[row.workout.date] = (byDate[row.workout.date] ?? 0) + load;
+  }
+  return byDate;
 }
 
 export async function fetchWorkoutDates(): Promise<string[]> {

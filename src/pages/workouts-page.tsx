@@ -6,7 +6,8 @@ import {
   type WorkoutListItem,
 } from "@/lib/api/workouts";
 import { ActivityGrid } from "@/components/activity-grid";
-import { SketchPlus } from "@/components/sketch-plus";
+import { TrendSpark } from "@/components/trend-spark";
+import { Plus } from "lucide-react";
 
 export default function WorkoutsPage() {
   const [load, setLoad] = useState<Record<string, number>>({});
@@ -27,17 +28,30 @@ export default function WorkoutsPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-8 py-4">
+    <div className="flex flex-col gap-6 py-4">
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <div className="flex justify-end">
+        <Link
+          to="/history"
+          aria-label="History"
+          className="p-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <TrendSpark className="h-5 w-8" />
+        </Link>
+      </div>
 
       <ActivityGrid load={load} workoutByDate={workoutByDate} />
 
       <Link
         to="/workouts/new"
         aria-label="New workout"
-        className="mx-auto flex size-28 items-center justify-center text-sky-500 transition-transform hover:scale-105 active:scale-95 dark:text-sky-400"
+        className="group flex h-24 items-center justify-center rounded-2xl bg-foreground text-background transition-transform hover:scale-[1.02] active:scale-[0.99]"
       >
-        <SketchPlus variant="single" className="size-28" />
+        <Plus
+          className="size-12 transition-transform duration-200 group-hover:rotate-90"
+          strokeWidth={2.5}
+        />
       </Link>
     </div>
   );

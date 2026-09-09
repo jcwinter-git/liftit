@@ -55,6 +55,7 @@ export function ExercisePicker({
       <div className="flex flex-col gap-1">
         <div className="flex gap-2">
           <Input
+            className="h-11 text-base"
             autoFocus
             placeholder={`New ${category.toLowerCase()} exercise name`}
             value={newName}
@@ -106,7 +107,7 @@ export function ExercisePicker({
         onChange(v);
       }}
     >
-      <SelectTrigger className="w-full">
+      <SelectTrigger className="h-11 w-full text-base">
         <SelectValue placeholder={`Select ${category.toLowerCase()} exercise`} />
       </SelectTrigger>
       <SelectContent>

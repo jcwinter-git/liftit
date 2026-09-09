@@ -38,12 +38,20 @@ function TrendTooltip({
 
 // Deliberately spare: no gridlines, no axis furniture, no legend. The numbers
 // live in the heading and the tooltip; the line just carries the shape.
+function compact(value: number) {
+  return value >= 1000
+    ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`
+    : String(Math.round(value));
+}
+
 export function ExerciseTrendChart({
   entries,
   weighted,
+  stroke = "currentColor",
 }: {
   entries: WorkoutVolume[];
   weighted: boolean;
+  stroke?: string;
 }) {
   const data: Point[] = entries.map((e) => ({
     date: e.date,
@@ -53,10 +61,19 @@ export function ExerciseTrendChart({
 
   return (
     <div className="text-foreground">
-      <ResponsiveContainer width="100%" height={72}>
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+      <ResponsiveContainer width="100%" height={96}>
+        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
           <XAxis dataKey="date" hide />
-          <YAxis hide domain={["dataMin", "dataMax"]} />
+          <YAxis
+            width={38}
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 11, fill: "currentColor" }}
+            className="text-muted-foreground"
+            domain={["dataMin", "dataMax"]}
+            tickFormatter={compact}
+            tickCount={3}
+          />
           <Tooltip
             cursor={false}
             content={<TrendTooltip weighted={weighted} />}
@@ -64,15 +81,15 @@ export function ExerciseTrendChart({
           <Line
             type="monotone"
             dataKey="value"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            dot={{ r: 2, strokeWidth: 0, fill: "currentColor" }}
-            activeDot={{ r: 3.5, strokeWidth: 0 }}
+            stroke={stroke}
+            strokeWidth={1.75}
+            dot={{ r: 2.5, strokeWidth: 0, fill: stroke }}
+            activeDot={{ r: 4, strokeWidth: 0 }}
             isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
-      <div className="flex justify-between px-2 text-[11px] text-muted-foreground">
+      <div className="flex justify-between pl-[38px] pr-2 text-[11px] text-muted-foreground">
         <span>{data.length > 0 ? shortDate(data[0].date) : ""}</span>
         <span>{data.length > 1 ? shortDate(data[data.length - 1].date) : ""}</span>
       </div>

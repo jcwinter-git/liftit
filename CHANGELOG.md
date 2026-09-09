@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-09 (later)
+
+### Home
+- The new-workout button is back to the solid black block with the `+` that spins
+  on press. The hand-drawn pencil circle is gone.
+- Added a small line-chart mark in the top right that opens History.
+
+### Logging a workout
+- All the text is roughly 25% larger, and Cancel / Save are now full-size buttons.
+  Inputs are 16px, which also stops iOS zooming in when you tap a field.
+- Fixed the alignment knocked out by the drag handle — the exercise pill and set
+  rows now sit clear of it.
+
+### History
+- Trend charts now have a **y-axis with numbers** (short-form, e.g. `1.0k`).
+- Exercise names are **colour-coded by muscle group**, and the trend line matches.
+  Every colour was darkened to pass WCAG AA contrast on the page background —
+  Arms in particular moved off the pale amber to a deep amber at 5.0:1.
+
 ## 2026-09-09
 
 ### Logging a workout

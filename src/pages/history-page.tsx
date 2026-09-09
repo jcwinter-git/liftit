@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/workouts";
 import { ExerciseTrendChart } from "@/components/exercise-trend-chart";
 import { CATEGORY_STYLE } from "@/components/body-part-picker";
+import { CATEGORY_STROKE, CATEGORY_TEXT } from "@/lib/category-colors";
 import {
   Popover,
   PopoverContent,
@@ -146,7 +147,9 @@ export default function HistoryPage() {
                 <div className="flex items-baseline justify-between gap-2">
                   <Link
                     to={`/exercises/${h.exercise.id}`}
-                    className="text-sm font-medium hover:underline"
+                    className={`text-sm font-medium hover:underline ${
+                      CATEGORY_TEXT[h.exercise.category]
+                    }`}
                   >
                     {h.exercise.name}
                   </Link>
@@ -156,7 +159,11 @@ export default function HistoryPage() {
                   </span>
                 </div>
                 {h.entries.length > 1 ? (
-                  <ExerciseTrendChart entries={h.entries} weighted={weighted} />
+                  <ExerciseTrendChart
+                    entries={h.entries}
+                    weighted={weighted}
+                    stroke={CATEGORY_STROKE[h.exercise.category]}
+                  />
                 ) : (
                   <span className="text-[11px] text-muted-foreground">
                     One session so far

@@ -246,11 +246,12 @@ export function WorkoutForm({
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date" className="text-base">Date</Label>
             <Input
               id="date"
               type="date"
               required
+              className="h-11 text-base"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -259,14 +260,14 @@ export function WorkoutForm({
 
         {todaysCategories.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-base text-muted-foreground">
               {isEdit ? "Trained:" : "Today:"}
             </span>
             {todaysCategories.map((category) => {
               const { icon: Icon, className } = CATEGORY_STYLE[category];
               return (
-                <Badge key={category} className={`gap-1 ${className}`}>
-                  <Icon className="size-3" />
+                <Badge key={category} className={`gap-1 text-sm ${className}`}>
+                  <Icon className="size-4" />
                   {category}
                 </Badge>
               );
@@ -306,7 +307,7 @@ export function WorkoutForm({
                 <button
                   type="button"
                   aria-label="Reorder exercise"
-                  className="absolute left-1 top-1/2 -translate-y-1/2 cursor-grab touch-none p-1 text-muted-foreground/50 active:cursor-grabbing"
+                  className="absolute left-0.5 top-1/2 -translate-y-1/2 cursor-grab touch-none p-1.5 text-muted-foreground/50 active:cursor-grabbing"
                   {...attributes}
                   {...listeners}
                 >
@@ -324,9 +325,9 @@ export function WorkoutForm({
                   </Button>
                 )}
 
-                <CardContent className="flex flex-col gap-3 pl-6">
+                <CardContent className="flex flex-col gap-3 pl-9">
                   <div className="flex items-start gap-2 pr-6">
-                    <div className="w-32 shrink-0">
+                    <div className="w-36 shrink-0">
                       <BodyPartPicker
                         value={block.category}
                         onChange={(category) =>
@@ -349,7 +350,7 @@ export function WorkoutForm({
                           onCreate={handleCreateExercise}
                         />
                       ) : (
-                        <div className="flex h-8 items-center text-sm text-muted-foreground">
+                        <div className="flex h-11 items-center text-base text-muted-foreground">
                           Pick a body part first
                         </div>
                       )}
@@ -359,14 +360,14 @@ export function WorkoutForm({
                   <div className="flex flex-col gap-2">
                     {block.sets.map((set, i) => (
                       <div key={set.localId} className="flex items-center gap-2">
-                        <span className="w-4 text-xs text-muted-foreground">
+                        <span className="w-4 text-sm text-muted-foreground">
                           {i + 1}
                         </span>
                         <Input
                           type="number"
                           inputMode="decimal"
                           placeholder="Weight"
-                          className="w-20"
+                          className="h-11 w-24 text-base"
                           value={set.weight}
                           onChange={(e) =>
                             updateSet(
@@ -377,12 +378,12 @@ export function WorkoutForm({
                             )
                           }
                         />
-                        <span className="text-muted-foreground">x</span>
+                        <span className="text-base text-muted-foreground">x</span>
                         <Input
                           type="number"
                           inputMode="numeric"
                           placeholder="Reps"
-                          className="w-16"
+                          className="h-11 w-20 text-base"
                           value={set.reps}
                           onChange={(e) =>
                             updateSet(
@@ -444,19 +445,20 @@ export function WorkoutForm({
             </SortableContext>
           </DndContext>
 
-          <Button type="button" variant="outline" onClick={addBlock}>
+          <Button type="button" variant="outline" className="h-12 text-base" onClick={addBlock}>
             + Add exercise
           </Button>
         </div>
 
         {isEdit && (
           <div className="flex flex-col gap-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes" className="text-base">Notes</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="How did it feel?"
+              className="text-base"
               rows={3}
             />
           </div>
@@ -466,6 +468,7 @@ export function WorkoutForm({
           <Button
             type="button"
             variant="secondary"
+            className="h-12 px-6 text-base"
             onClick={() => {
               if (confirmCancel) onCancel();
               else setConfirmCancel(true);
@@ -482,7 +485,7 @@ export function WorkoutForm({
           <Button
             type="submit"
             disabled={isPending}
-            className="bg-sky-500 text-white hover:bg-sky-600"
+            className="h-12 bg-sky-500 px-8 text-base text-white hover:bg-sky-600"
           >
             {isPending ? "Saving..." : "Save"}
           </Button>

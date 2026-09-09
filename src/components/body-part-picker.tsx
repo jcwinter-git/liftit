@@ -125,11 +125,11 @@ export function BodyPartPicker({
         <Button
           type="button"
           variant="outline"
-          className="w-full justify-start gap-2 px-2"
+          className="h-11 w-full justify-start gap-2 px-2 text-base"
         >
           {ValueIcon && value ? (
             <>
-              <ValueIcon className="size-4 shrink-0" />
+              <ValueIcon className="size-5 shrink-0" />
               <span className="truncate">{value}</span>
             </>
           ) : (

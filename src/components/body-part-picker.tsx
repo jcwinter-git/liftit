@@ -52,7 +52,7 @@ const CATEGORY_STYLE: Record<
   Abs: {
     icon: AbsIcon,
     className:
-      "bg-orange-100 text-orange-900 hover:bg-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:hover:bg-orange-900",
+      "bg-teal-100 text-teal-900 hover:bg-teal-200 dark:bg-teal-950 dark:text-teal-200 dark:hover:bg-teal-900",
   },
   Other: {
     icon: OtherIcon,

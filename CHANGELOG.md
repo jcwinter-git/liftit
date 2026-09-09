@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-09 (evening)
+
+### Exercises
+- **Abs moved from orange to teal**, so it no longer sits almost on top of Arms'
+  amber. Changed everywhere — the body-part tiles, History exercise names, and
+  trend lines. Teal reads at 5.5:1 on white, so it stays comfortably legible.
+
 ## 2026-09-09 (later)
 
 ### Home

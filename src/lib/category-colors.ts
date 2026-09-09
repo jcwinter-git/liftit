@@ -8,7 +8,7 @@ export const CATEGORY_TEXT: Record<ExerciseCategory, string> = {
   Chest: "text-rose-700 dark:text-rose-300",
   Legs: "text-green-700 dark:text-green-300",
   Shoulders: "text-purple-700 dark:text-purple-300",
-  Abs: "text-orange-700 dark:text-orange-300",
+  Abs: "text-teal-700 dark:text-teal-300",
   Other: "text-slate-600 dark:text-slate-300",
 };
 
@@ -19,6 +19,6 @@ export const CATEGORY_STROKE: Record<ExerciseCategory, string> = {
   Chest: "#be123c",
   Legs: "#15803d",
   Shoulders: "#7e22ce",
-  Abs: "#c2410c",
+  Abs: "#0f766e",
   Other: "#475569",
 };

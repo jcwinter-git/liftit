@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-09-09
+
+### Logging a workout
+- Exercise cards can be **dragged into a different order** using the handle on the
+  left, so targets picked in the wrong order can be rearranged.
+- **Press and hold the `+`** next to a set to duplicate the last set you filled in;
+  a normal tap still adds an empty one.
+- The progress bar now reuses the calendar's green ramp: it starts pale and deepens
+  as you close on your last session, holding full contrast from there up to your
+  best ever. The blue fill and the star marker are gone.
+
+### Mobile
+- Added `touch-action: manipulation` to controls, removing the browser's ~300ms
+  double-tap-zoom delay that made taps feel dropped.
+- Dialogs now sit above the backdrop on their own layer, are capped to 90% of the
+  *visible* viewport height and scroll internally, so a tall dialog can't run under
+  the browser chrome.
+- Removed the backdrop blur behind dialogs — it's a known source of hit-testing
+  glitches on iOS.
+- The dialog close button is now a 42px tap target instead of ~28px.
+
+### Home
+- The new-workout button is now a hand-drawn circle around a `+` instead of the
+  large filled rectangle.
+
 ## 2026-09-08 (evening, later)
 
 ### Home

@@ -1,7 +1,15 @@
-import { Star } from "lucide-react";
+// Same green ramp as the calendar: the fill starts pale and deepens as you close
+// on your last session, hitting full contrast there and holding it through to
+// your best ever. No numbers, no markers.
+const RAMP = [
+  "bg-emerald-100 dark:bg-emerald-950",
+  "bg-emerald-200 dark:bg-emerald-900",
+  "bg-emerald-300 dark:bg-emerald-800",
+  "bg-emerald-400 dark:bg-emerald-700",
+  "bg-emerald-500 dark:bg-emerald-600",
+  "bg-emerald-600 dark:bg-emerald-400",
+];
 
-// Wordless progress: the fill creeps toward your last session, the star marks
-// your best ever. Turns green once you've beaten last time.
 export function BeatBar({
   current,
   prev,
@@ -11,35 +19,27 @@ export function BeatBar({
   prev: number | null;
   max: number | null;
 }) {
-  // A little headroom so the star never sits half-off the right edge.
-  const scale = Math.max(current, prev ?? 0, max ?? 0, 1) * 1.06;
-  const pct = (value: number) => Math.min(100, (value / scale) * 100);
-  const beaten = prev != null && prev > 0 && current >= prev;
+  const target = prev ?? 0;
+  const ceiling = Math.max(target, max ?? 0, current, 1);
+
+  const width = Math.min(100, (current / ceiling) * 100);
+  // Depth tracks progress toward last session, then pins at full contrast.
+  const progress = target > 0 ? Math.min(1, current / target) : 0;
+  const shade = RAMP[Math.min(RAMP.length - 1, Math.floor(progress * (RAMP.length - 1)))];
 
   return (
     <div
-      className="relative h-3 w-full"
-      aria-label={beaten ? "Past your last session" : "Progress toward your last session"}
+      className="h-2 w-full overflow-hidden rounded-full bg-muted"
+      aria-label={
+        target > 0 && current >= target
+          ? "Past your last session"
+          : "Progress toward your last session"
+      }
     >
-      <div className="absolute top-1 h-1.5 w-full rounded-full bg-muted" />
       <div
-        className={`absolute top-1 h-1.5 rounded-full transition-[width] duration-300 ${
-          beaten ? "bg-emerald-500" : "bg-sky-400"
-        }`}
-        style={{ width: `${pct(current)}%` }}
+        className={`h-full rounded-full transition-all duration-300 ${shade}`}
+        style={{ width: `${width}%` }}
       />
-      {prev != null && prev > 0 && (max == null || prev < max) && (
-        <div
-          className="absolute top-0.5 h-2.5 w-px bg-foreground/40"
-          style={{ left: `${pct(prev)}%` }}
-        />
-      )}
-      {max != null && max > 0 && (
-        <Star
-          className="absolute -top-0 size-3 -translate-x-1/2 fill-amber-400 text-amber-400"
-          style={{ left: `${pct(max)}%` }}
-        />
-      )}
     </div>
   );
 }

@@ -121,6 +121,14 @@
   * {
     @apply border-border outline-ring/50;
     }
+  html {
+    -webkit-text-size-adjust: 100%;
+    }
+  /* Kills the ~300ms double-tap-zoom delay that makes taps feel dropped. */
+  button, a, [role="button"], input, select, textarea, label {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    }
   body {
     @apply bg-background text-foreground;
     }

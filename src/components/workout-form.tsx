@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, X } from "lucide-react";
+import { GripVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,21 @@ import { ExercisePicker } from "@/components/exercise-picker";
 import { BodyPartPicker, CATEGORY_STYLE } from "@/components/body-part-picker";
 import { TargetsDialog } from "@/components/targets-dialog";
 import { BeatBar } from "@/components/beat-bar";
+import { AddSetButton } from "@/components/add-set-button";
+import { SortableBlock } from "@/components/sortable-block";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { createExercise, saveWorkout, updateWorkout } from "@/lib/api/workouts";
 import { defaultExerciseId } from "@/lib/exercise-defaults";
 import { type ExerciseStats } from "@/lib/volume";
@@ -66,6 +81,12 @@ export function WorkoutForm({
     return () => clearTimeout(timer);
   }, [confirmCancel]);
 
+  // A small drag threshold so tapping the handle doesn't start a drag, and
+  // typing in the inputs is never intercepted.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
   const todaysCategories = useMemo(
     () =>
       Array.from(
@@ -103,6 +124,33 @@ export function WorkoutForm({
         b.localId === blockId ? { ...b, sets: [...b.sets, emptySet()] } : b,
       ),
     );
+  }
+
+  function duplicateLastSet(blockId: string) {
+    setBlocks((bs) =>
+      bs.map((b) => {
+        if (b.localId !== blockId || b.sets.length === 0) return b;
+        // Copy the last set that actually has something in it — the trailing
+        // row is often a blank one you just added.
+        const source =
+          [...b.sets].reverse().find((x) => x.weight.trim() || x.reps.trim()) ??
+          b.sets[b.sets.length - 1];
+        return {
+          ...b,
+          sets: [...b.sets, { ...source, localId: uid() }],
+        };
+      }),
+    );
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setBlocks((bs) => {
+      const from = bs.findIndex((b) => b.localId === active.id);
+      const to = bs.findIndex((b) => b.localId === over.id);
+      return from === -1 || to === -1 ? bs : arrayMove(bs, from, to);
+    });
   }
 
   function removeSet(blockId: string, setId: string) {
@@ -227,6 +275,16 @@ export function WorkoutForm({
         )}
 
         <div className="flex flex-col gap-4">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={blocks.map((b) => b.localId)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-4">
           {blocks.map((block) => {
             const stats = block.exerciseId
               ? exerciseStats[block.exerciseId]
@@ -242,7 +300,18 @@ export function WorkoutForm({
             }, 0);
 
             return (
-              <Card key={block.localId} className="relative">
+              <SortableBlock key={block.localId} id={block.localId}>
+                {({ attributes, listeners }) => (
+              <Card className="relative">
+                <button
+                  type="button"
+                  aria-label="Reorder exercise"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 cursor-grab touch-none p-1 text-muted-foreground/50 active:cursor-grabbing"
+                  {...attributes}
+                  {...listeners}
+                >
+                  <GripVertical className="size-4" />
+                </button>
                 {blocks.length > 1 && (
                   <Button
                     type="button"
@@ -255,7 +324,7 @@ export function WorkoutForm({
                   </Button>
                 )}
 
-                <CardContent className="flex flex-col gap-3">
+                <CardContent className="flex flex-col gap-3 pl-6">
                   <div className="flex items-start gap-2 pr-6">
                     <div className="w-32 shrink-0">
                       <BodyPartPicker
@@ -336,15 +405,13 @@ export function WorkoutForm({
                           </Button>
                         )}
                         {i === block.sets.length - 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            aria-label="Add set"
-                            className="h-8 w-8 shrink-0 p-0 text-muted-foreground"
-                            onClick={() => addSet(block.localId)}
-                          >
-                            <Plus className="size-4" />
-                          </Button>
+                          <AddSetButton
+                            onAdd={() => addSet(block.localId)}
+                            onDuplicate={() => duplicateLastSet(block.localId)}
+                            canDuplicate={block.sets.some(
+                              (x) => x.weight.trim() !== "" || x.reps.trim() !== "",
+                            )}
+                          />
                         )}
                       </div>
                     ))}
@@ -369,8 +436,13 @@ export function WorkoutForm({
                   )}
                 </CardContent>
               </Card>
+                )}
+              </SortableBlock>
             );
           })}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           <Button type="button" variant="outline" onClick={addBlock}>
             + Add exercise

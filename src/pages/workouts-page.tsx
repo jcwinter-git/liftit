@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
 import {
   fetchDailyLoad,
   fetchWorkouts,
   type WorkoutListItem,
 } from "@/lib/api/workouts";
 import { ActivityGrid } from "@/components/activity-grid";
+import { SketchPlus } from "@/components/sketch-plus";
 
 export default function WorkoutsPage() {
   const [load, setLoad] = useState<Record<string, number>>({});
@@ -35,12 +35,9 @@ export default function WorkoutsPage() {
       <Link
         to="/workouts/new"
         aria-label="New workout"
-        className="group flex h-24 items-center justify-center rounded-2xl bg-sky-100 ring-2 ring-sky-400 transition-transform hover:scale-[1.02] active:scale-[0.99] dark:bg-sky-950 dark:ring-sky-500"
+        className="mx-auto flex size-28 items-center justify-center text-sky-500 transition-transform hover:scale-105 active:scale-95 dark:text-sky-400"
       >
-        <Plus
-          className="size-12 text-sky-600 transition-transform group-hover:rotate-90 dark:text-sky-300"
-          strokeWidth={3}
-        />
+        <SketchPlus variant="single" className="size-28" />
       </Link>
     </div>
   );

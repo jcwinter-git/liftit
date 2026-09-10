@@ -7,39 +7,13 @@ import {
   fetchExerciseVolumeStats,
   fetchWorkout,
   type WorkoutDetail,
-  type WorkoutSetRow,
 } from "@/lib/api/workouts";
 import { WorkoutForm } from "@/components/workout-form";
-import { CATEGORY_STYLE } from "@/components/body-part-picker";
+import { WorkoutSummary } from "@/components/workout-summary";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { blocksFromWorkout } from "@/lib/workout-blocks";
-import { formatVolume, type ExerciseStats } from "@/lib/volume";
-import type { Exercise, ExerciseCategory } from "@/lib/types";
-
-type ExerciseGroup = {
-  name: string;
-  category: ExerciseCategory;
-  sets: WorkoutSetRow[];
-};
-
-function groupByExercise(workout: WorkoutDetail): ExerciseGroup[] {
-  const sets = [...workout.sets].sort((a, b) => a.set_order - b.set_order);
-  const groups = new Map<string, ExerciseGroup>();
-
-  for (const s of sets) {
-    const key = s.exercise?.id ?? "unknown";
-    if (!groups.has(key)) {
-      groups.set(key, {
-        name: s.exercise?.name ?? "Unknown exercise",
-        category: s.exercise?.category ?? "Other",
-        sets: [],
-      });
-    }
-    groups.get(key)!.sets.push(s);
-  }
-  return Array.from(groups.values());
-}
+import { type ExerciseStats } from "@/lib/volume";
+import type { Exercise } from "@/lib/types";
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -123,8 +97,6 @@ export default function WorkoutDetailPage() {
     );
   }
 
-  const groups = groupByExercise(workout);
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-2">
@@ -152,43 +124,7 @@ export default function WorkoutDetailPage() {
         <p className="text-sm text-muted-foreground">{workout.notes}</p>
       )}
 
-      <div className="flex flex-col gap-4">
-        {groups.map((group) => {
-          const { icon: Icon, className } = CATEGORY_STYLE[group.category];
-          const weighted = group.sets.some((s) => s.weight != null);
-          const total = group.sets.reduce(
-            (sum, s) => sum + (weighted ? (s.weight ?? 0) * s.reps : s.reps),
-            0,
-          );
-
-          return (
-            <Card key={group.name}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <span className={`rounded-md p-1 ${className}`}>
-                    <Icon className="size-4" />
-                  </span>
-                  {group.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-1">
-                <ul className="flex flex-col gap-1 text-sm">
-                  {group.sets.map((s) => (
-                    <li key={s.id} className="text-muted-foreground">
-                      {s.weight != null
-                        ? `${s.weight} x ${s.reps}`
-                        : `${s.reps} reps`}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-right text-xs text-foreground">
-                  Total: {formatVolume(total, weighted)}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <WorkoutSummary workout={workout} />
 
       <div className="flex justify-end">
         <Button

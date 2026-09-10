@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-09 (night)
+
+### Home
+- **Tapping a day on the calendar now opens that workout in a pop-up** instead of
+  navigating away — exercises, sets and per-exercise totals, with an `x` in the
+  top right to dismiss it. "Open workout" in the pop-up still takes you to the
+  full page if you want to edit.
+
+### Data
+- Added `supabase/migrations/0007_backfill_workout_log.sql`, which backfills the
+  handwritten log from **8 Aug through 7 Sep** — 9 sessions, 78 sets. Bench,
+  biceps, military press and RDL loads are doubled, since those are logged per
+  dumbbell. Run it in the Supabase SQL editor; it skips any date that already has
+  a workout, so it's safe to re-run.
+
 ## 2026-09-09 (evening)
 
 ### Exercises

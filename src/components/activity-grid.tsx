@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 const WEEKS = 4;
 
 const LEVEL_CLASS = [
@@ -38,9 +36,11 @@ function calendarWindow(): { dates: string[]; today: string } {
 export function ActivityGrid({
   load,
   workoutByDate = {},
+  onSelect,
 }: {
   load: Record<string, number>;
   workoutByDate?: Record<string, string>;
+  onSelect?: (workoutId: string) => void;
 }) {
   const { dates, today } = calendarWindow();
   const max = Math.max(...dates.map((d) => load[d] ?? 0), 0);
@@ -80,12 +80,13 @@ export function ActivityGrid({
           const workoutId = workoutByDate[date];
 
           return workoutId ? (
-            <Link
+            <button
               key={date}
-              to={`/workouts/${workoutId}`}
+              type="button"
               title={title}
               aria-label={title}
-              className={`${cell} transition-transform hover:scale-110`}
+              onClick={() => onSelect?.(workoutId)}
+              className={`${cell} transition-transform hover:scale-110 active:scale-95`}
             />
           ) : (
             <div key={date} title={title} className={cell} />

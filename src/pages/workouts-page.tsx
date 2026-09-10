@@ -7,12 +7,14 @@ import {
 } from "@/lib/api/workouts";
 import { ActivityGrid } from "@/components/activity-grid";
 import { TrendSpark } from "@/components/trend-spark";
+import { WorkoutPeekDialog } from "@/components/workout-peek-dialog";
 import { Plus } from "lucide-react";
 
 export default function WorkoutsPage() {
   const [load, setLoad] = useState<Record<string, number>>({});
   const [workoutByDate, setWorkoutByDate] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [peekId, setPeekId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchWorkouts(), fetchDailyLoad()])
@@ -41,7 +43,11 @@ export default function WorkoutsPage() {
         </Link>
       </div>
 
-      <ActivityGrid load={load} workoutByDate={workoutByDate} />
+      <ActivityGrid
+        load={load}
+        workoutByDate={workoutByDate}
+        onSelect={setPeekId}
+      />
 
       <Link
         to="/workouts/new"
@@ -53,6 +59,8 @@ export default function WorkoutsPage() {
           strokeWidth={2.5}
         />
       </Link>
+
+      <WorkoutPeekDialog workoutId={peekId} onClose={() => setPeekId(null)} />
     </div>
   );
 }

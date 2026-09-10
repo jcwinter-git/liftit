@@ -1,20 +1,12 @@
-// Wordless "your numbers" mark: a line stepping up and to the right.
+// Wordless "your numbers" mark: a solid zigzag bolt striking up and to the
+// right. Drawn as one filled shape rather than a stroke so it holds its weight
+// against the black new-workout block below it.
 export function TrendSpark({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 20" fill="none" className={className} aria-hidden="true">
+    <svg viewBox="0 0 32 20" className={className} aria-hidden="true">
       <path
-        d="M3 16 L11 11 L18 13.5 L29 4"
-        stroke="currentColor"
-        strokeWidth={2.25}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M23 4 L29 4 L29 10"
-        stroke="currentColor"
-        strokeWidth={2.25}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M2.5 17.5 L10.85 4.98 L17.44 11.27 L24.13 4.55 L22.69 3.16 L28.41 2.31 L27.71 8.04 L26.27 6.65 L17.56 15.73 L11.15 10.02 Z"
+        fill="currentColor"
       />
     </svg>
   );

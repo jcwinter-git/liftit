@@ -3,6 +3,8 @@
 ## 2026-09-09 (night)
 
 ### Home
+- **The trend mark is now a solid zigzag bolt** instead of a thin line — it holds
+  its own next to the black new-workout block.
 - **LiftIt is 25% bigger** in the header, and the trend mark now sits on the same
   line, over on the right — it used to hang below on its own row. It only shows
   on the home screen.

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import {
   Sheet,
@@ -10,10 +10,16 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { TrendSpark } from "@/components/trend-spark";
 
 export function Nav() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+
+  // The trend mark belongs to the home screen, which is otherwise wordless —
+  // elsewhere the header stays clear.
+  const showTrend = pathname === "/workouts";
 
   async function handleSignOut() {
     setOpen(false);
@@ -58,9 +64,19 @@ export function Nav() {
           </SheetContent>
         </Sheet>
 
-        <Link to="/workouts" className="text-2xl font-semibold tracking-tight">
+        <Link to="/workouts" className="text-3xl font-semibold tracking-tight">
           LiftIt
         </Link>
+
+        {showTrend && (
+          <Link
+            to="/history"
+            aria-label="History"
+            className="ml-auto p-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <TrendSpark className="h-5 w-8" />
+          </Link>
+        )}
       </div>
     </header>
   );

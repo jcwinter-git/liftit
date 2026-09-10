@@ -3,6 +3,9 @@
 ## 2026-09-09 (night)
 
 ### Home
+- **LiftIt is 25% bigger** in the header, and the trend mark now sits on the same
+  line, over on the right — it used to hang below on its own row. It only shows
+  on the home screen.
 - **Tapping a day on the calendar now opens that workout in a pop-up** instead of
   navigating away — exercises, sets and per-exercise totals, with an `x` in the
   top right to dismiss it. "Open workout" in the pop-up still takes you to the

@@ -6,7 +6,6 @@ import {
   type WorkoutListItem,
 } from "@/lib/api/workouts";
 import { ActivityGrid } from "@/components/activity-grid";
-import { TrendSpark } from "@/components/trend-spark";
 import { WorkoutPeekDialog } from "@/components/workout-peek-dialog";
 import { Plus } from "lucide-react";
 
@@ -32,16 +31,6 @@ export default function WorkoutsPage() {
   return (
     <div className="flex flex-col gap-6 py-4">
       {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <div className="flex justify-end">
-        <Link
-          to="/history"
-          aria-label="History"
-          className="p-2 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <TrendSpark className="h-5 w-8" />
-        </Link>
-      </div>
 
       <ActivityGrid
         load={load}

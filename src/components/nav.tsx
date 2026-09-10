@@ -72,9 +72,9 @@ export function Nav() {
           <Link
             to="/history"
             aria-label="History"
-            className="ml-auto p-2 text-muted-foreground transition-colors hover:text-foreground"
+            className="ml-auto p-2 text-foreground transition-opacity hover:opacity-70"
           >
-            <TrendSpark className="h-5 w-8" />
+            <TrendSpark className="h-7 w-11" />
           </Link>
         )}
       </div>
